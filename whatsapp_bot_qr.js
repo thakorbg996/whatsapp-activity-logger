@@ -1,15 +1,15 @@
 /**
- * Automated WhatsApp Web QR Bot (Render.com & Cloud Optimized)
+ * Automated WhatsApp Web QR Bot (Render.com Low-RAM Optimized)
  * -------------------------------------------------------------
- * 1. Generates a crisp, high-resolution QR Code webpage at /qr
- * 2. Persists login session in ./.wwebjs_auth so you scan ONCE only.
- * 3. Listens on /api/send-whatsapp for instant cloud sending.
+ * 1. Uses lightweight remote webVersionCache to bypass heavy WhatsApp Web initial sync.
+ * 2. Optimized Puppeteer flags for 512MB RAM cloud containers.
+ * 3. High-resolution QR Code page at /qr with real-time status polling.
  */
 
 const path = require('path');
 const fs = require('fs');
 
-// Set PUPPETEER_CACHE_DIR to ./.cache so Puppeteer resolves local Chrome at runtime
+// Set PUPPETEER_CACHE_DIR so Puppeteer resolves local Chrome at runtime
 process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.join(__dirname, '.cache');
 
 const express = require('express');
@@ -48,7 +48,7 @@ try {
     console.log('Using default Puppeteer Chrome launcher...');
 }
 
-// Initialize WhatsApp Web Client with memory-optimized Puppeteer Flags
+// Low-Memory Puppeteer Flags optimized for 512MB Cloud Containers
 const puppeteerOptions = {
     headless: true,
     args: [
@@ -60,7 +60,10 @@ const puppeteerOptions = {
         '--no-zygote',
         '--single-process',
         '--disable-gpu',
-        '--js-flags="--max-old-space-size=4096"'
+        '--disable-extensions',
+        '--disable-component-update',
+        '--disable-background-networking',
+        '--disable-sync'
     ]
 };
 
@@ -68,10 +71,15 @@ if (chromeExecutablePath) {
     puppeteerOptions.executablePath = chromeExecutablePath;
 }
 
+// Client setup with remote webVersionCache (forces fast lightweight WhatsApp Web JS)
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "teacher-wa-bot"
     }),
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    },
     puppeteer: puppeteerOptions
 });
 
@@ -101,12 +109,12 @@ client.on('qr', async (qr) => {
     }
 });
 
-// Event: Authenticated (QR code scanned successfully!)
+// Event: Authenticated
 client.on('authenticated', () => {
     isAuthenticated = true;
     currentQrDataUrl = null;
-    loadingMessage = "Authenticated! Syncing WhatsApp Web data...";
-    console.log('\n🔑 AUTHENTICATED SUCCESSFULLY! Loading chats...\n');
+    loadingMessage = "Authenticated! Launching WhatsApp Bot session...";
+    console.log('\n🔑 AUTHENTICATED SUCCESSFULLY! Launching WhatsApp Bot session...\n');
 });
 
 // Event: Loading screen progress
@@ -182,15 +190,15 @@ app.get('/qr', (req, res) => {
             <html>
             <head>
                 <title>WhatsApp Bot - Syncing</title>
-                <meta http-equiv="refresh" content="3">
+                <meta http-equiv="refresh" content="2">
                 <script src="https://cdn.tailwindcss.com"></script>
             </head>
             <body class="bg-slate-900 text-white flex items-center justify-center min-h-screen font-sans p-4">
                 <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl text-center max-w-md border border-amber-500/30">
                     <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <h1 class="text-xl font-bold text-amber-400 mb-2">QR Code Scanned Successfully!</h1>
+                    <h1 class="text-xl font-bold text-amber-400 mb-2">Scan Confirmed!</h1>
                     <p class="text-slate-300 text-sm mb-3">${loadingMessage}</p>
-                    <p class="text-xs text-slate-400">Syncing WhatsApp Web session... Please wait 5–10 seconds.</p>
+                    <p class="text-xs text-slate-400">Completing connection... Auto-refreshing page.</p>
                 </div>
             </body>
             </html>
