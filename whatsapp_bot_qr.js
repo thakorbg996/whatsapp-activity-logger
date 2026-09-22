@@ -12,6 +12,7 @@ const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,34 +23,44 @@ app.use(express.json());
 let isReady = false;
 let currentQrDataUrl = null;
 
-// Resolve Chrome Executable Path for Render.com Cloud Environment
+// Resolve Chrome Executable Path safely for Render.com Cloud Environment
 let chromeExecutablePath = undefined;
 try {
-    chromeExecutablePath = puppeteer.executablePath();
-    console.log('Detected Chrome Executable Path:', chromeExecutablePath);
+    const detectedPath = puppeteer.executablePath();
+    if (detectedPath && fs.existsSync(detectedPath)) {
+        chromeExecutablePath = detectedPath;
+        console.log('✅ Found verified Chrome Executable Path:', chromeExecutablePath);
+    } else {
+        console.log('⚠️ Detected path does not exist at runtime. Letting Puppeteer resolve automatically.');
+    }
 } catch (e) {
     console.log('Using default Puppeteer Chrome launcher...');
 }
 
 // Initialize WhatsApp Web Client with Cloud-Friendly Puppeteer Flags
+const puppeteerOptions = {
+    headless: true,
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+    ]
+};
+
+if (chromeExecutablePath) {
+    puppeteerOptions.executablePath = chromeExecutablePath;
+}
+
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "teacher-wa-bot"
     }),
-    puppeteer: {
-        headless: true,
-        executablePath: chromeExecutablePath,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ]
-    }
+    puppeteer: puppeteerOptions
 });
 
 // Event: QR Code generation
