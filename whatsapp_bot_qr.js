@@ -6,13 +6,18 @@
  * 3. Listens on /api/send-whatsapp for instant cloud sending.
  */
 
+const path = require('path');
+const fs = require('fs');
+
+// Set PUPPETEER_CACHE_DIR to ./.cache so Puppeteer resolves local Chrome at runtime
+process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.join(__dirname, '.cache');
+
 const express = require('express');
 const cors = require('cors');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const puppeteer = require('puppeteer');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,7 +36,12 @@ try {
         chromeExecutablePath = detectedPath;
         console.log('✅ Found verified Chrome Executable Path:', chromeExecutablePath);
     } else {
-        console.log('⚠️ Detected path does not exist at runtime. Letting Puppeteer resolve automatically.');
+        console.log('⚠️ Primary path not found, searching in ./.cache...');
+        const localCacheChrome = path.join(__dirname, '.cache', 'chrome', 'linux-146.0.7680.31', 'chrome-linux64', 'chrome');
+        if (fs.existsSync(localCacheChrome)) {
+            chromeExecutablePath = localCacheChrome;
+            console.log('✅ Found Chrome in local ./.cache:', chromeExecutablePath);
+        }
     }
 } catch (e) {
     console.log('Using default Puppeteer Chrome launcher...');
