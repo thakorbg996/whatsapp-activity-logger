@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WhatsApp Activity Logger & Automated Bot for Teachers</title>
+    <meta name="description" content="Mobile-friendly app for teachers to generate, copy, and automatically send daily classroom activity updates directly to WhatsApp.">
+    <meta name="theme-color" content="#075E54">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WA Logger">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        wa: {
+                            light: '#25D366',
+                            dark: '#075E54',
+                            teal: '#128C7E',
+                            bg: '#E5DDD5',
+                            bubble: '#DCF8C6',
+                            darkbg: '#0b141a',
+                            darkbubble: '#005c4b',
+                            darkcard: '#111b21'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- PWA Manifest Inline Data -->
+    <link rel="manifest" href="data:application/manifest+json,{
+        %22name%22:%22WhatsApp%20Activity%20Logger%22,
+        %22short_name%22:%22WA%20Logger%22,
+        %22start_url%22:%22.%22,
+        %22display%22:%22standalone%22,
+        %22background_color%22:%22%23075E54%22,
+        %22theme_color%22:%22%23128C7E%22,
+        %22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/3670/3670051.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]
+    }">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 999px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .dark .glass-panel {
+            background: rgba(17, 27, 33, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .wa-chat-pattern {
+            background-color: #efeae2;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 0);
+            background-size: 16px 16px;
+        }
+        .dark .wa-chat-pattern {
+            background-color: #0b141a;
+            background-image: radial-gradient(#1e293b 1px, transparent 0);
+            background-size: 16px 16px;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        @media (min-width: 640px) {
+            input, select, textarea {
+                font-size: 0.875rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 antialiased selection:bg-emerald-500 selection:text-white pb-20 lg:pb-8">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 z-50 translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-400/30">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-200 shrink-0"></i>
+        <span id="toast-message" class="font-medium text-sm">Copied to WhatsApp!</span>
+    </div>
+
+    <!-- Mobile Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-1.5 leading-tight">
+                        WA Logger & Bot
+                        <span class="text-[9px] sm:text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 px-2 py-0.5 rounded-full uppercase tracking-wider">Bot Auto-Send</span>
+                    </h1>
+                    <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Generate & auto-send daily updates directly to your WhatsApp</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <button id="btn-device-help" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-emerald-500"></i>
+                    <span class="hidden sm:inline">Other Devices</span>
+                </button>
+                <button id="btn-theme" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme">
+                    <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                    <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Segmented View Switcher -->
+        <div class="lg:hidden px-4 pb-2.5 pt-0">
+            <div class="grid grid-cols-2 p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-xl text-xs font-medium">
+                <button id="tab-btn-form" class="py-2 rounded-lg text-slate-900 dark:text-white bg-white dark:bg-slate-900 shadow-sm font-semibold flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>1. Builder & Form</span>
+                </button>
+                <button id="tab-btn-preview" class="py-2 rounded-lg text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>2. Live Preview</span>
+                    <span id="tab-preview-count" class="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+
+            <!-- LEFT COLUMN: Form Controls & Activity Builder -->
+            <div id="section-form-builder" class="lg:col-span-7 space-y-5 sm:space-y-6">
+
+                <!-- 1. HEADER & METADATA CONTROLS -->
+                <div class="glass-panel rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <h2 class="font-heading font-semibold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-4 h-4 text-emerald-500"></i>
+                            Header & Metadata Controls
+                        </h2>
+                        <button id="btn-sample-data" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            Sample Preset
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                        <!-- School Selector -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                School Selector
+                            </label>
+                            <select id="school-select" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition">
+                                <option value="GJSPS" selected>GJSPS</option>
+                                <option value="GJPPS">GJPPS</option>
+                                <option value="GJPRPS">GJPRPS</option>
+                                <option value="GJDKS">GJDKS</option>
+                                <option value="GJLPS">GJLPS</option>
+                                <option value="GJBPS">GJBPS</option>
+                                <option value="GJOCPS">GJOCPS</option>
+                                <option value="GJBRPS">GJBRPS</option>
+                                <option value="CUSTOM">Custom School Name...</option>
+                            </select>
+                            <div id="custom-school-container" class="hidden mt-2">
+                                <input type="text" id="custom-school-input" placeholder="Type custom school name (e.g. Model School)" class="w-full px-3 py-2.5 rounded-xl text-sm bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700/50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                Date
+                            </label>
+                            <input type="date" id="date-picker" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+
+                        <!-- Target WhatsApp Phone Number for Direct Sending -->
+                        <div class="space-y-1.5 sm:col-span-2 p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40">
+                            <label class="block text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
+                                My Target WhatsApp Number (For Direct / Bot Auto-Send)
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="tel" id="target-phone-input" placeholder="e.g. 9876543210 or +919876543210" class="w-full px-3 py-2 rounded-xl text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/60 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <button type="button" id="btn-save-phone" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shrink-0">
+                                    Save
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 opacity-90">Enter your 10-digit mobile number. Saved locally so you can click 1 button to send updates directly to your WhatsApp!</p>
+                        </div>
+
+                        <!-- Update Headline Input -->
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                                Update Headline
+                            </label>
+                            <input type="text" id="headline-input" value="📢 Today's Update 📢" placeholder="e.g. 📢 Today's Update 📢" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            
+                            <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-1">
+                                <button type="button" class="btn-chip-headline text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 shrink-0 border border-slate-200 dark:border-slate-700">📢 Today's Update 📢</button>
+                                <button type="button" class="btn-chip-headline text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 shrink-0 border border-slate-200 dark:border-slate-700">📝 Daily Activity Update 📝</button>
+                                <button type="button" class="btn-chip-headline text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 shrink-0 border border-slate-200 dark:border-slate-700">⭐ Classroom Report ⭐</button>
+                            </div>
+                        </div>
+
+                        <!-- Assessment Note / Subtitle -->
+                        <div class="space-y-2 sm:col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>Assessment Subtitle Line</span>
+                                    <span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium normal-case bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">Shows Above Activities</span>
+                                </label>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="assessment-toggle" checked class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:after:border-slate-600 peer-checked:bg-emerald-500"></div>
+                                </label>
+                            </div>
+                            <div id="assessment-input-container">
+                                <input type="text" id="assessment-note-input" value="conducted the following G-Shala assessments in GJSPS School" placeholder="e.g. conducted the following G-Shala assessments in GJSPS School" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. DYNAMIC ACTIVITY ENTRY BUILDER -->
+                <div class="glass-panel rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <h2 class="font-heading font-semibold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-500"></i>
+                            Add Activity Entry
+                        </h2>
+                        <span class="text-[11px] text-slate-400">Excel Chapter Catalog</span>
+                    </div>
+
+                    <form id="activity-form" class="space-y-3.5 sm:space-y-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Grade</label>
+                                <select id="entry-grade" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="Gr08" selected>Gr08</option>
+                                    <option value="Gr07">Gr07</option>
+                                    <option value="Gr06">Gr06</option>
+                                    <option value="Gr05">Gr05</option>
+                                    <option value="Gr04">Gr04</option>
+                                    <option value="Gr03">Gr03</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Division</label>
+                                <select id="entry-division" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="A" selected>A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
+                            </div>
+
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Subject</label>
+                                <select id="entry-subject" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="Maths" selected>Maths</option>
+                                    <option value="Science">Science</option>
+                                    <option value="English">English</option>
+                                    <option value="Social Science">Social Science</option>
+                                    <option value="Gujarati">Gujarati</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Chapter</label>
+                                <button type="button" id="btn-toggle-custom-chapter" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                    <span id="custom-chapter-toggle-label">Type Custom Chapter</span>
+                                </button>
+                            </div>
+
+                            <div id="chapter-dropdown-container">
+                                <select id="entry-chapter-select" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                </select>
+                            </div>
+
+                            <div id="chapter-input-container" class="hidden">
+                                <input type="text" id="entry-chapter-manual" placeholder="e.g. Chapter03-Chatushkonani Samaj" class="w-full px-3 py-2.5 rounded-xl text-sm bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700/50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Activity Suffix</label>
+                                <input type="text" id="entry-suffix" value="Activity" placeholder="e.g. Activity" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                
+                                <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pt-1">
+                                    <button type="button" class="btn-chip-suffix text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200 dark:border-slate-700">Activity</button>
+                                    <button type="button" class="btn-chip-suffix text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200 dark:border-slate-700">G-Shala</button>
+                                    <button type="button" class="btn-chip-suffix text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200 dark:border-slate-700">Test</button>
+                                    <button type="button" class="btn-chip-suffix text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200 dark:border-slate-700">Revision</button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">Students Present</label>
+                                <input type="number" id="entry-present-count" value="28" min="0" max="150" placeholder="e.g. 28" class="w-full px-3 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full min-h-[48px] py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            <span>Add Activity Row</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 3. ADDED ACTIVITIES LIST -->
+                <div class="glass-panel rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-heading font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
+                                Activity Entries
+                            </h2>
+                            <span id="entries-badge" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+                        </div>
+                        <button id="btn-clear-all" class="text-xs text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 disabled:opacity-40" disabled>
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            Clear All
+                        </button>
+                    </div>
+
+                    <div id="entries-list" class="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div id="empty-state" class="py-8 text-center text-slate-400 dark:text-slate-500">
+                            <i data-lucide="clipboard-list" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                            <p class="text-sm font-medium">No activities added yet</p>
+                            <p class="text-xs opacity-75">Fill out form above or click "Sample Preset"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Live WhatsApp Preview & Auto-Send Panel -->
+            <div id="section-live-preview" class="lg:col-span-5 space-y-4 lg:sticky lg:top-20 hidden lg:block">
+
+                <div class="rounded-2xl shadow-xl overflow-hidden border border-slate-300 dark:border-slate-800 flex flex-col bg-white dark:bg-slate-900">
+                    
+                    <!-- WhatsApp Header -->
+                    <div class="bg-wa-dark text-white p-3.5 sm:p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-xs sm:text-sm shrink-0">
+                                WA
+                            </div>
+                            <div>
+                                <h3 class="font-heading font-semibold text-xs sm:text-sm leading-tight">
+                                    WhatsApp Live Preview
+                                </h3>
+                                <p class="text-[10px] sm:text-[11px] text-emerald-200 opacity-90">Auto-Send & Direct Copy</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-1 bg-black/20 p-1 rounded-lg text-[10px]">
+                            <button id="btn-fmt-chapter" class="px-2 py-0.5 rounded font-mono font-bold bg-white text-slate-900 text-[10px]">Chapter01</button>
+                            <button id="btn-fmt-ch" class="px-2 py-0.5 rounded font-mono text-emerald-100 text-[10px]">Ch01</button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Screen Pattern Body -->
+                    <div class="wa-chat-pattern p-3 sm:p-4 min-h-[350px] sm:min-h-[380px] max-h-[500px] overflow-y-auto custom-scrollbar flex flex-col">
+                        <div class="self-center bg-white/80 dark:bg-slate-800/80 backdrop-blur text-[10px] text-slate-600 dark:text-slate-400 px-3 py-0.5 rounded-md shadow-sm mb-3">
+                            TODAY • AUTOMATIC OUTPUT
+                        </div>
+
+                        <div class="relative max-w-[98%] sm:max-w-[90%] bg-wa-bubble dark:bg-wa-darkbubble text-slate-900 dark:text-slate-100 p-3.5 sm:p-4 rounded-xl shadow-md self-start border border-emerald-200/50 dark:border-emerald-800/50 text-xs sm:text-sm font-mono leading-relaxed whitespace-pre-wrap select-all">
+                            <div id="whatsapp-output-text"></div>
+                            
+                            <div class="mt-2 text-[10px] text-slate-500 dark:text-slate-400 text-right flex items-center justify-end gap-1">
+                                <span id="wa-timestamp">12:00 PM</span>
+                                <i data-lucide="check-check" class="w-3 h-3 text-sky-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons Toolbar -->
+                    <div class="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                        
+                        <!-- NEW: Direct Auto-Send to My WhatsApp Number -->
+                        <button id="btn-direct-whatsapp-send" class="w-full min-h-[48px] py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>🚀 Auto-Send Direct to My WhatsApp</span>
+                        </button>
+
+                        <!-- Secondary Copy Button -->
+                        <button id="btn-copy-whatsapp" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs flex items-center justify-center gap-2 transition-colors">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            <span id="copy-btn-text">Copy to Clipboard</span>
+                        </button>
+
+                        <!-- Share Directly to WhatsApp App -->
+                        <a id="btn-share-whatsapp" href="#" target="_blank" class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs flex items-center justify-center gap-2 transition-colors border border-slate-200 dark:border-slate-700">
+                            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                            <span>Open in WhatsApp App</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2">
+                    <i data-lucide="bot" class="w-4 h-4 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i>
+                    <div>
+                        <p class="font-semibold mb-0.5">Automated WhatsApp Bot Direct Send:</p>
+                        <p class="opacity-90">Clicking <strong>"Auto-Send Direct to My WhatsApp"</strong> opens WhatsApp pre-addressed to your number, or dispatches via the background bot server automatically!</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING MOBILE BOTTOM QUICK-ACTION BAR -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-3 shadow-2xl flex items-center gap-2">
+        <button id="mobile-quick-send" class="flex-1 min-h-[46px] py-2.5 bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Auto-Send to My WhatsApp</span>
+        </button>
+        <button id="mobile-quick-copy" class="w-12 h-[46px] bg-slate-800 active:bg-slate-700 text-white rounded-xl flex items-center justify-center shrink-0" title="Copy to Clipboard">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+        </button>
+    </div>
+
+    <!-- DEVICE HELP MODAL -->
+    <div id="device-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button id="btn-close-device-modal" class="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-heading font-bold text-base text-slate-900 dark:text-white">WhatsApp Bot & Device Help</h3>
+                    <p class="text-xs text-slate-500">Auto-send updates to your phone</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 space-y-1">
+                    <div class="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Automated Direct Sending
+                    </div>
+                    <p>1. Type your mobile number (e.g. <code class="bg-white dark:bg-slate-800 px-1 py-0.5 rounded font-mono">9876543210</code>) in the Target WhatsApp field and tap Save.</p>
+                    <p>2. Whenever you finish building your daily update, tap <strong>"Auto-Send Direct to My WhatsApp"</strong>.</p>
+                    <p>3. WhatsApp will open pre-addressed directly to your phone number with your formatted text ready!</p>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-1">
+                    <div class="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <i data-lucide="server" class="w-4 h-4 text-sky-500"></i>
+                        Background Server Bot (Optional)
+                    </div>
+                    <p>For zero-click backend sending without opening WhatsApp on your device, run the included backend bot server: <code class="bg-slate-200 dark:bg-slate-700 px-1 rounded font-mono">node whatsapp_bot_server.js</code></p>
+                </div>
+            </div>
+
+            <button id="btn-close-modal-bottom" class="w-full py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold rounded-xl text-xs">
+                Got It, Close
+            </button>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const CHAPTER_CATALOG = {
+            Gr08: {
+                Maths: [
+                    "Ch 01-Sanmey Sankhyao",
+                    "Ch 02-Ek Chal Surekh Samikaran",
+                    "Ch 03-Chatushkonani Samaj",
+                    "Ch 04-Mahitinu Niyaman",
+                    "Ch 05-Varg Ane Vargmul",
+                    "Ch 06-Ghan Ane Ghanmul",
+                    "Ch 07-Rashioni Tulana",
+                    "Ch 08-Baijik Padavalio Ane Nityasam",
+                    "Ch 09-Mapan",
+                    "Ch 10-Ghat Ane Ghatank",
+                    "Ch 11-Samapraman Ane Vyastpraman",
+                    "Ch 12-Avayavikaran",
+                    "Ch 13-Aalekhno Parichay"
+                ],
+                Science: [
+                    "Ch 01-Pak Utpadan Ane Vyavsthapan",
+                    "Ch 02-Sukshmjivo Mitra Ane Shatru",
+                    "Ch 03-Kolaso Ane Petrolium",
+                    "Ch 04-Dahan Ane Jyot",
+                    "Ch 05-Vanaspatio Ane Pranionu Sanrakshan",
+                    "Ch 06-Pranioma Prajanan",
+                    "Ch 07-Kishoravastha Taraf",
+                    "Ch 08-Bal Ane Daban",
+                    "Ch 09-Gharshan",
+                    "Ch 10-Dhvani",
+                    "Ch 11-Vidhyut Pravahni Rasayanik Asaro",
+                    "Ch 12-Ketalik Kudarati Ghatanao",
+                    "Ch 13-Prakash"
+                ],
+                English: [
+                    "Ch 01-Q for Question",
+                    "Ch 02-LMBB: Learn More Be Brighter",
+                    "Ch 03-What Were You Doing?",
+                    "Ch 04-Sun-Tour",
+                    "Ch 05-I Will Be That",
+                    "Ch 06-You Love English, Don't You?",
+                    "Ch 07-Ah! Oh! Ouch!..",
+                    "Ch 08-Tell Me Why?",
+                    "Ch 09-English Plus"
+                ],
+                "Social Science": [
+                    "Ch 01-Bharatma Uropiyo ane Angrejo nu Aagaman",
+                    "Ch 02-Bharatma British Shasan",
+                    "Ch 03-Bharatno Swatantrya Sangram",
+                    "Ch 04-Bharatni Prachin Vidyapitho",
+                    "Ch 05-Udyogo ane Kheti"
+                ],
+                Gujarati: [
+                    "Ch 01-Bajar ma",
+                    "Ch 02-Ek Jash a Aapiye",
+                    "Ch 03-Jambunath",
+                    "Ch 04-Tana Riri",
+                    "Ch 05-Subhashito"
+                ]
+            },
+            Gr07: {
+                Maths: [
+                    "Ch 01-Poornank Sankhyao",
+                    "Ch 02-Apoorank ane Dashansh Sankhyao",
+                    "Ch 03-Mahitinu Niyaman",
+                    "Ch 04-Sada Samikaran",
+                    "Ch 05-Rekha ane Khoona",
+                    "Ch 06-Trikon ane tena Gundharmo",
+                    "Ch 07-Rashio ni Tulna",
+                    "Ch 08-Samey Sankhyao",
+                    "Ch 09-Parimiti ane Kshetrafal",
+                    "Ch 10-Beej Ganitiya Padavali",
+                    "Ch 11-Ghaat ane Ghaatank",
+                    "Ch 12-Samiti",
+                    "Ch 13-Ghan Aakaronu Pratyakshikaran"
+                ],
+                Science: [
+                    "Ch 01-Vanaspatima Poshan",
+                    "Ch 02-Pranioma Poshan",
+                    "Ch 03-Ushma",
+                    "Ch 04-Acid, Baise Ane Kshar",
+                    "Ch 05-Bhautik Ane Rasayanik Ferfaro",
+                    "Ch 06-Sajivoma Svasan",
+                    "Ch 07-Pranio Ane Vanaspatioma Vahan",
+                    "Ch 08-Vanaspatima Prajanan",
+                    "Ch 09-Gati Ane Samay",
+                    "Ch 10-Vidhyutpravah Ane Teni Asaro",
+                    "Ch 11-Prakash",
+                    "Ch 12-Jangalo Aapani Jivadori",
+                    "Ch 13-Dushit Panini Varta"
+                ],
+                English: [
+                    "Ch 01-Water",
+                    "Ch 02-Fairs and Festivals",
+                    "Ch 03-The Guardians of the Green",
+                    "Ch 04-Success",
+                    "Ch 05-Nation First",
+                    "Ch 06-Value the Values",
+                    "Ch 07-Teamwork",
+                    "Ch 08-Express Yourself",
+                    "Ch 09-Feel It, Live It",
+                    "Ch 10-Life Skills"
+                ],
+                "Social Science": [
+                    "Ch 01-Rajput Yug: Nava Shasako ane Rajyo",
+                    "Ch 02-Delhi Sultanat",
+                    "Ch 03-Mughal Samrajya",
+                    "Ch 04-Sthapatyo, Shahr ane Karigaro"
+                ],
+                Gujarati: [
+                    "Ch 01-Mela ma",
+                    "Ch 02-Aaj ni Ghadhi Re Rarniyamni",
+                    "Ch 03-Pariksha",
+                    "Ch 04-Bavna Be Varas"
+                ]
+            },
+            Gr06: {
+                Maths: [
+                    "Ch 01-Ganitma Petarn",
+                    "Ch 02-Rekhao Ane Khunao",
+                    "Ch 03-Sankhyani Ramat",
+                    "Ch 04-Mahitinu Niyaman Ane Rajuat",
+                    "Ch 05-Avibhajya Sankhyao",
+                    "Ch 06-Parimiti Ane Kshetrafal",
+                    "Ch 07-Apurnak",
+                    "Ch 08-Rachanao Sathe Ramat",
+                    "Ch 09-Sanmati",
+                    "Ch 10-Shunyani Biji Baju"
+                ],
+                Science: [
+                    "Ch 01-Vigyanani Adabhut Duniya",
+                    "Ch 02-Sajiv Shrustima Vividhata",
+                    "Ch 03-Uchit Aahar:Svasth Sharirno Marg",
+                    "Ch 04-Chumbakne Janiye",
+                    "Ch 05-Lambainu Mapan Ane Gati",
+                    "Ch 06-Aapani Aasapasni Samagri",
+                    "Ch 07-Tapman Ane Tenu Mapan",
+                    "Ch 08-Panini Vividh Avasthaoni Yatra",
+                    "Ch 09-Rojinda Jivanma Alagikaranani Paddhatio",
+                    "Ch 10-Sajivoni Lakshanikatao",
+                    "Ch 11-Kudaratno Amulya Khajano",
+                    "Ch 12-Pruthvine Par"
+                ],
+                English: [
+                    "Ch 01-Health is Wealth",
+                    "Ch 02-Manners Matter",
+                    "Ch 03-Strength of Nature",
+                    "Ch 04-Circle of Love",
+                    "Ch 05-Around the World",
+                    "Ch 06-Unity in Diversity",
+                    "Ch 07-Be a Champion",
+                    "Ch 08-I am Capable",
+                    "Ch 09-Techno-Tour",
+                    "Ch 10-School of Skills"
+                ],
+                "Social Science": [
+                    "Ch 01-Chalo Itihas Janiye",
+                    "Ch 02-Aadi Manav thi Sthayi Jivan ni Safar",
+                    "Ch 03-Prachin Nagar ane Grantho"
+                ],
+                Gujarati: [
+                    "Ch 01-Raily Station",
+                    "Ch 02-Hind Mata ne Sambodhan",
+                    "Ch 03-Dwindal"
+                ]
+            }
+        };
+
+        const GENERIC_CHAPTERS = Array.from({length: 12}, (_, i) => `Ch ${String(i + 1).padStart(2, '0')}-Unit Topic ${i + 1}`);
+
+        let state = {
+            school: 'GJSPS',
+            customSchool: '',
+            targetPhone: '',
+            date: new Date().toISOString().split('T')[0],
+            headline: "📢 Today's Update 📢",
+            showAssessmentNote: true,
+            assessmentNote: "conducted the following G-Shala assessments in GJSPS School",
+            useChapterFullPrefix: true,
+            useCustomChapterInput: false,
+            activeMobileTab: 'form',
+            activities: []
+        };
+
+        const schoolSelect = document.getElementById('school-select');
+        const customSchoolContainer = document.getElementById('custom-school-container');
+        const customSchoolInput = document.getElementById('custom-school-input');
+        const targetPhoneInput = document.getElementById('target-phone-input');
+        const btnSavePhone = document.getElementById('btn-save-phone');
+
+        const datePicker = document.getElementById('date-picker');
+        const headlineInput = document.getElementById('headline-input');
+        const assessmentToggle = document.getElementById('assessment-toggle');
+        const assessmentInputContainer = document.getElementById('assessment-input-container');
+        const assessmentNoteInput = document.getElementById('assessment-note-input');
+        
+        const entryGrade = document.getElementById('entry-grade');
+        const entryDivision = document.getElementById('entry-division');
+        const entrySubject = document.getElementById('entry-subject');
+        const entryChapterSelect = document.getElementById('entry-chapter-select');
+        const entryChapterManual = document.getElementById('entry-chapter-manual');
+        const chapterDropdownContainer = document.getElementById('chapter-dropdown-container');
+        const chapterInputContainer = document.getElementById('chapter-input-container');
+        const btnToggleCustomChapter = document.getElementById('btn-toggle-custom-chapter');
+        const customChapterToggleLabel = document.getElementById('custom-chapter-toggle-label');
+        const entrySuffix = document.getElementById('entry-suffix');
+        const entryPresentCount = document.getElementById('entry-present-count');
+        const activityForm = document.getElementById('activity-form');
+        
+        const entriesBadge = document.getElementById('entries-badge');
+        const entriesList = document.getElementById('entries-list');
+        const emptyState = document.getElementById('empty-state');
+        const btnClearAll = document.getElementById('btn-clear-all');
+        const btnSampleData = document.getElementById('btn-sample-data');
+
+        const whatsappOutputText = document.getElementById('whatsapp-output-text');
+        const btnDirectWhatsappSend = document.getElementById('btn-direct-whatsapp-send');
+        const btnCopyWhatsapp = document.getElementById('btn-copy-whatsapp');
+        const copyBtnText = document.getElementById('copy-btn-text');
+        const btnShareWhatsapp = document.getElementById('btn-share-whatsapp');
+        const waTimestamp = document.getElementById('wa-timestamp');
+
+        const btnFmtChapter = document.getElementById('btn-fmt-chapter');
+        const btnFmtCh = document.getElementById('btn-fmt-ch');
+
+        const btnDeviceHelp = document.getElementById('btn-device-help');
+        const deviceModal = document.getElementById('device-modal');
+        const btnCloseDeviceModal = document.getElementById('btn-close-device-modal');
+        const btnCloseModalBottom = document.getElementById('btn-close-modal-bottom');
+        const btnTheme = document.getElementById('btn-theme');
+
+        const sectionFormBuilder = document.getElementById('section-form-builder');
+        const sectionLivePreview = document.getElementById('section-live-preview');
+        const tabBtnForm = document.getElementById('tab-btn-form');
+        const tabBtnPreview = document.getElementById('tab-btn-preview');
+        const tabPreviewCount = document.getElementById('tab-preview-count');
+        const mobileQuickSend = document.getElementById('mobile-quick-send');
+        const mobileQuickCopy = document.getElementById('mobile-quick-copy');
+
+        function init() {
+            datePicker.value = state.date;
+            
+            const savedState = localStorage.getItem('wa_activity_logger_state');
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    state = { ...state, ...parsed };
+                    datePicker.value = state.date || new Date().toISOString().split('T')[0];
+                    schoolSelect.value = state.school || 'GJSPS';
+                    if (state.school === 'CUSTOM') {
+                        customSchoolContainer.classList.remove('hidden');
+                        customSchoolInput.value = state.customSchool || '';
+                    }
+                    if (state.targetPhone) {
+                        targetPhoneInput.value = state.targetPhone;
+                    }
+                    headlineInput.value = state.headline || "📢 Today's Update 📢";
+                    assessmentToggle.checked = state.showAssessmentNote;
+                    if (!state.showAssessmentNote) assessmentInputContainer.classList.add('hidden');
+                    assessmentNoteInput.value = state.assessmentNote || `conducted the following G-Shala assessments in ${getEffectiveSchoolName()} School`;
+                } catch (e) {
+                    console.error('Failed to parse saved state:', e);
+                }
+            }
+
+            updateTimestamp();
+            updateChapterOptions();
+            render();
+            lucide.createIcons();
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            waTimestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function updateChapterOptions() {
+            const grade = entryGrade.value;
+            const subject = entrySubject.value;
+
+            let chapters = [];
+            if (CHAPTER_CATALOG[grade] && CHAPTER_CATALOG[grade][subject]) {
+                chapters = CHAPTER_CATALOG[grade][subject];
+            } else {
+                chapters = GENERIC_CHAPTERS;
+            }
+
+            entryChapterSelect.innerHTML = '';
+            chapters.forEach(ch => {
+                const opt = document.createElement('option');
+                opt.value = ch;
+                opt.textContent = ch;
+                entryChapterSelect.appendChild(opt);
+            });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const [yyyy, mm, dd] = dateString.split('-');
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
+        function formatChapterString(chapStr, useFullPrefix) {
+            if (!chapStr) return '';
+            if (useFullPrefix) {
+                return chapStr.replace(/^Ch\s*(\d+)/i, (m, p1) => `Chapter${p1.padStart(2, '0')}`);
+            } else {
+                return chapStr.replace(/^Chapter\s*(\d+)/i, (m, p1) => `Ch${p1.padStart(2, '0')}`);
+            }
+        }
+
+        function getEffectiveSchoolName() {
+            if (state.school === 'CUSTOM') {
+                return state.customSchool.trim() || 'Custom School';
+            }
+            return state.school;
+        }
+
+        function generateAttendanceSummary() {
+            if (state.activities.length === 0) return '';
+
+            const classMap = new Map();
+            state.activities.forEach(act => {
+                const stdNum = act.grade.replace(/^Gr0*/i, '');
+                const classKey = `std-${stdNum}${act.division}`;
+                classMap.set(classKey, act.presentCount);
+            });
+
+            const parts = [];
+            classMap.forEach((count, classKey) => {
+                parts.push(`${classKey} (${count})`);
+            });
+
+            return `Student present in ${parts.join(' & ')}`;
+        }
+
+        function generateWhatsAppText() {
+            const schoolName = getEffectiveSchoolName();
+            const formattedDate = formatDate(state.date);
+            const lines = [];
+
+            lines.push(`${state.headline.trim()} (${schoolName})`);
+            lines.push(`Date: ${formattedDate}`);
+            lines.push('');
+
+            if (state.showAssessmentNote && state.assessmentNote.trim()) {
+                lines.push(state.assessmentNote.trim());
+                lines.push('');
+            }
+
+            if (state.activities.length > 0) {
+                state.activities.forEach(act => {
+                    const chap = formatChapterString(act.chapter, state.useChapterFullPrefix);
+                    lines.push(`${act.grade}${act.division}-${act.subject}-${chap}-${act.suffix}`);
+                });
+            } else {
+                lines.push('[No activity rows added yet]');
+            }
+
+            lines.push('');
+
+            const attendanceSummary = generateAttendanceSummary();
+            if (attendanceSummary) {
+                lines.push(attendanceSummary);
+            }
+
+            return lines.join('\n');
+        }
+
+        function saveState() {
+            localStorage.setItem('wa_activity_logger_state', JSON.stringify(state));
+        }
+
+        function render() {
+            const fullText = generateWhatsAppText();
+            whatsappOutputText.textContent = fullText;
+
+            let phoneNum = (state.targetPhone || '').replace(/[^\d+]/g, '');
+            if (phoneNum && !phoneNum.startsWith('+')) {
+                phoneNum = phoneNum.length === 10 ? '91' + phoneNum : phoneNum;
+            }
+            const encodedText = encodeURIComponent(fullText);
+            
+            if (phoneNum) {
+                btnShareWhatsapp.href = `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodedText}`;
+            } else {
+                btnShareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodedText}`;
+            }
+
+            entriesBadge.textContent = state.activities.length;
+            if (state.activities.length > 0) {
+                tabPreviewCount.textContent = state.activities.length;
+                tabPreviewCount.classList.remove('hidden');
+            } else {
+                tabPreviewCount.classList.add('hidden');
+            }
+            btnClearAll.disabled = state.activities.length === 0;
+
+            if (state.activities.length === 0) {
+                emptyState.classList.remove('hidden');
+                entriesList.querySelectorAll('.entry-card').forEach(c => c.remove());
+            } else {
+                emptyState.classList.add('hidden');
+                entriesList.querySelectorAll('.entry-card').forEach(c => c.remove());
+
+                state.activities.forEach((act, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'entry-card p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shadow-sm hover:border-emerald-500/50 transition-all';
+                    
+                    const chapDisplay = formatChapterString(act.chapter, state.useChapterFullPrefix);
+
+                    card.innerHTML = `
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold flex items-center justify-center shrink-0">
+                                ${idx + 1}
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">${act.grade}${act.division}</span> • ${act.subject} • ${chapDisplay}
+                                </p>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                    Suffix: <span class="font-medium text-slate-700 dark:text-slate-300">${act.suffix}</span> | Present: <span class="font-medium text-slate-700 dark:text-slate-300">${act.presentCount}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button class="btn-move-up p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition ${idx === 0 ? 'opacity-30 cursor-not-allowed' : ''}" data-index="${idx}">
+                                <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                            </button>
+                            <button class="btn-move-down p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition ${idx === state.activities.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" data-index="${idx}">
+                                <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                            </button>
+                            <button class="btn-delete-entry p-2 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" data-index="${idx}">
+                                <i data-lucide="trash" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    entriesList.appendChild(card);
+                });
+                lucide.createIcons();
+            }
+
+            if (state.useChapterFullPrefix) {
+                btnFmtChapter.className = "px-2 py-0.5 rounded font-mono font-bold bg-white text-slate-900 text-[10px]";
+                btnFmtCh.className = "px-2 py-0.5 rounded font-mono text-emerald-100 text-[10px]";
+            } else {
+                btnFmtCh.className = "px-2 py-0.5 rounded font-mono font-bold bg-white text-slate-900 text-[10px]";
+                btnFmtChapter.className = "px-2 py-0.5 rounded font-mono text-emerald-100 text-[10px]";
+            }
+
+            if (window.innerWidth < 1024) {
+                if (state.activeMobileTab === 'form') {
+                    sectionFormBuilder.classList.remove('hidden');
+                    sectionLivePreview.classList.add('hidden');
+
+                    tabBtnForm.className = "py-2 rounded-lg text-slate-900 dark:text-white bg-white dark:bg-slate-900 shadow-sm font-semibold flex items-center justify-center gap-1.5 transition-all";
+                    tabBtnPreview.className = "py-2 rounded-lg text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition-all";
+                } else {
+                    sectionFormBuilder.classList.add('hidden');
+                    sectionLivePreview.classList.remove('hidden');
+
+                    tabBtnPreview.className = "py-2 rounded-lg text-slate-900 dark:text-white bg-white dark:bg-slate-900 shadow-sm font-semibold flex items-center justify-center gap-1.5 transition-all";
+                    tabBtnForm.className = "py-2 rounded-lg text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition-all";
+                }
+            } else {
+                sectionFormBuilder.classList.remove('hidden');
+                sectionLivePreview.classList.remove('hidden');
+            }
+
+            saveState();
+        }
+
+        // -------------------------------------------------------------
+        // AUTOMATED DIRECT SEND HANDLER
+        // -------------------------------------------------------------
+        async function sendDirectToWhatsApp() {
+            const rawPhone = targetPhoneInput.value.trim();
+            if (!rawPhone) {
+                alert('Please enter your WhatsApp mobile number first in the field above!');
+                targetPhoneInput.focus();
+                return;
+            }
+
+            state.targetPhone = rawPhone;
+            saveState();
+
+            const fullText = generateWhatsAppText();
+            let cleanNumber = rawPhone.replace(/[^\d+]/g, '');
+            if (!cleanNumber.startsWith('+')) {
+                cleanNumber = cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber;
+            }
+
+            // 1. Try sending via local Bot Server API if active
+            try {
+                const botRes = await fetch('http://localhost:3001/api/send-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetNumber: cleanNumber, messageText: fullText })
+                });
+                
+                if (botRes.ok) {
+                    const data = await botRes.json();
+                    showToast('🚀 Bot dispatched update automatically!');
+                }
+            } catch (err) {
+                // If local bot server is not active, launch direct WhatsApp deep link pre-addressed to phone
+                console.log('Bot server offline, launching direct WhatsApp deep link...');
+            }
+
+            // 2. Open WhatsApp pre-addressed directly to user's phone number
+            const encodedText = encodeURIComponent(fullText);
+            const waUrl = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodedText}`;
+            window.open(waUrl, '_blank');
+        }
+
+        btnDirectWhatsappSend.addEventListener('click', sendDirectToWhatsApp);
+        mobileQuickSend.addEventListener('click', sendDirectToWhatsApp);
+
+        btnSavePhone.addEventListener('click', () => {
+            state.targetPhone = targetPhoneInput.value.trim();
+            saveState();
+            showToast('Phone number saved!');
+        });
+
+        tabBtnForm.addEventListener('click', () => {
+            state.activeMobileTab = 'form';
+            render();
+        });
+        tabBtnPreview.addEventListener('click', () => {
+            state.activeMobileTab = 'preview';
+            render();
+        });
+
+        window.addEventListener('resize', () => {
+            render();
+        });
+
+        document.querySelectorAll('.btn-chip-headline').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                headlineInput.value = e.target.textContent.trim();
+                state.headline = headlineInput.value;
+                render();
+            });
+        });
+
+        document.querySelectorAll('.btn-chip-suffix').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                entrySuffix.value = e.target.textContent.trim();
+            });
+        });
+
+        schoolSelect.addEventListener('change', (e) => {
+            state.school = e.target.value;
+            if (state.school === 'CUSTOM') {
+                customSchoolContainer.classList.remove('hidden');
+                customSchoolInput.focus();
+            } else {
+                customSchoolContainer.classList.add('hidden');
+                const schoolName = getEffectiveSchoolName();
+                assessmentNoteInput.value = `conducted the following G-Shala assessments in ${schoolName} School`;
+                state.assessmentNote = assessmentNoteInput.value;
+            }
+            render();
+        });
+
+        customSchoolInput.addEventListener('input', (e) => {
+            state.customSchool = e.target.value;
+            const schoolName = getEffectiveSchoolName();
+            assessmentNoteInput.value = `conducted the following G-Shala assessments in ${schoolName} School`;
+            state.assessmentNote = assessmentNoteInput.value;
+            render();
+        });
+
+        datePicker.addEventListener('change', (e) => {
+            state.date = e.target.value;
+            render();
+        });
+
+        headlineInput.addEventListener('input', (e) => {
+            state.headline = e.target.value;
+            render();
+        });
+
+        assessmentToggle.addEventListener('change', (e) => {
+            state.showAssessmentNote = e.target.checked;
+            if (state.showAssessmentNote) {
+                assessmentInputContainer.classList.remove('hidden');
+            } else {
+                assessmentInputContainer.classList.add('hidden');
+            }
+            render();
+        });
+
+        assessmentNoteInput.addEventListener('input', (e) => {
+            state.assessmentNote = e.target.value;
+            render();
+        });
+
+        entryGrade.addEventListener('change', () => {
+            updateChapterOptions();
+        });
+
+        entrySubject.addEventListener('change', () => {
+            updateChapterOptions();
+        });
+
+        btnToggleCustomChapter.addEventListener('click', () => {
+            state.useCustomChapterInput = !state.useCustomChapterInput;
+            if (state.useCustomChapterInput) {
+                chapterDropdownContainer.classList.add('hidden');
+                chapterInputContainer.classList.remove('hidden');
+                customChapterToggleLabel.textContent = "Select from List";
+                entryChapterManual.focus();
+            } else {
+                chapterDropdownContainer.classList.remove('hidden');
+                chapterInputContainer.classList.add('hidden');
+                customChapterToggleLabel.textContent = "Type Custom Chapter";
+            }
+        });
+
+        activityForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const grade = entryGrade.value;
+            const division = entryDivision.value;
+            const subject = entrySubject.value;
+            const suffix = entrySuffix.value.trim() || 'Activity';
+            const presentCount = parseInt(entryPresentCount.value, 10) || 0;
+
+            let chapter = '';
+            if (state.useCustomChapterInput) {
+                chapter = entryChapterManual.value.trim();
+                if (!chapter) {
+                    alert('Please enter a chapter name or switch back to dropdown selection.');
+                    return;
+                }
+            } else {
+                chapter = entryChapterSelect.value;
+            }
+
+            state.activities.push({
+                id: Date.now(),
+                grade,
+                division,
+                subject,
+                chapter,
+                suffix,
+                presentCount
+            });
+
+            showToast('Activity row added!');
+            render();
+        });
+
+        entriesList.addEventListener('click', (e) => {
+            const btnMoveUp = e.target.closest('.btn-move-up');
+            const btnMoveDown = e.target.closest('.btn-move-down');
+            const btnDelete = e.target.closest('.btn-delete-entry');
+
+            if (btnMoveUp) {
+                const idx = parseInt(btnMoveUp.dataset.index, 10);
+                if (idx > 0) {
+                    const temp = state.activities[idx];
+                    state.activities[idx] = state.activities[idx - 1];
+                    state.activities[idx - 1] = temp;
+                    render();
+                }
+            } else if (btnMoveDown) {
+                const idx = parseInt(btnMoveDown.dataset.index, 10);
+                if (idx < state.activities.length - 1) {
+                    const temp = state.activities[idx];
+                    state.activities[idx] = state.activities[idx + 1];
+                    state.activities[idx + 1] = temp;
+                    render();
+                }
+            } else if (btnDelete) {
+                const idx = parseInt(btnDelete.dataset.index, 10);
+                state.activities.splice(idx, 1);
+                render();
+            }
+        });
+
+        btnClearAll.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all added activities?')) {
+                state.activities = [];
+                render();
+            }
+        });
+
+        btnSampleData.addEventListener('click', () => {
+            state.school = 'GJSPS';
+            schoolSelect.value = 'GJSPS';
+            customSchoolContainer.classList.add('hidden');
+
+            state.headline = "📢 Today's Update 📢";
+            headlineInput.value = state.headline;
+
+            state.showAssessmentNote = true;
+            assessmentToggle.checked = true;
+            assessmentInputContainer.classList.remove('hidden');
+            state.assessmentNote = "conducted the following G-Shala assessments in GJSPS School";
+            assessmentNoteInput.value = state.assessmentNote;
+
+            state.useChapterFullPrefix = true;
+
+            state.activities = [
+                {
+                    id: 1,
+                    grade: 'Gr08',
+                    division: 'A',
+                    subject: 'Maths',
+                    chapter: 'Ch 03-Chatushkonani Samaj',
+                    suffix: 'Activity',
+                    presentCount: 28
+                },
+                {
+                    id: 2,
+                    grade: 'Gr08',
+                    division: 'A',
+                    subject: 'Science',
+                    chapter: 'Ch 03-Kolaso Ane Petrolium',
+                    suffix: 'Activity',
+                    presentCount: 28
+                },
+                {
+                    id: 3,
+                    grade: 'Gr06',
+                    division: 'A',
+                    subject: 'English',
+                    chapter: 'Ch 01-Health is Wealth',
+                    suffix: 'Activity',
+                    presentCount: 21
+                }
+            ];
+
+            render();
+            showToast('Sample preset loaded!');
+        });
+
+        btnFmtChapter.addEventListener('click', () => {
+            state.useChapterFullPrefix = true;
+            render();
+        });
+        btnFmtCh.addEventListener('click', () => {
+            state.useChapterFullPrefix = false;
+            render();
+        });
+
+        async function copyWhatsAppContent() {
+            const text = generateWhatsAppText();
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                copyBtnText.textContent = "Copied!";
+                btnCopyWhatsapp.classList.remove('bg-slate-800');
+                btnCopyWhatsapp.classList.add('bg-emerald-700', 'text-white');
+                
+                showToast('Copied to WhatsApp!');
+
+                setTimeout(() => {
+                    copyBtnText.textContent = "Copy to Clipboard";
+                    btnCopyWhatsapp.classList.remove('bg-emerald-700');
+                    btnCopyWhatsapp.classList.add('bg-slate-800');
+                }, 2000);
+            } catch (err) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Copied to WhatsApp!');
+            }
+        }
+
+        btnCopyWhatsapp.addEventListener('click', copyWhatsAppContent);
+        mobileQuickCopy.addEventListener('click', copyWhatsAppContent);
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 2500);
+        }
+
+        btnDeviceHelp.addEventListener('click', () => {
+            deviceModal.classList.remove('hidden');
+        });
+        btnCloseDeviceModal.addEventListener('click', () => {
+            deviceModal.classList.add('hidden');
+        });
+        btnCloseModalBottom.addEventListener('click', () => {
+            deviceModal.classList.add('hidden');
+        });
+        deviceModal.addEventListener('click', (e) => {
+            if (e.target === deviceModal) deviceModal.classList.add('hidden');
+        });
+
+        btnTheme.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
